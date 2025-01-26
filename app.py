@@ -1,6 +1,7 @@
 import datetime
 import requests
 from fastapi import FastAPI, Request
+from fastapi.responses import Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -142,6 +143,11 @@ async def send_message(data: dict):
         return JSONResponse(content={"response": bot_response, "context": matched_context})
     
     return JSONResponse(content={"response": "No message received!"})
+
+# Ignore favicon.ico requests by returning a 204 No Content response
+@app.get("/favicon.ico")
+async def favicon():
+    return Response(status_code=204)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))  # Default to 8000 if no $PORT is set
