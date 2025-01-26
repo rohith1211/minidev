@@ -9,6 +9,8 @@ import torch
 import chromadb
 import google.generativeai as genai  # Import Google Gemini API
 import uuid  # Import for unique ID generation
+import os
+import uvicorn
 
 import csv
 # Initialize FastAPI app
