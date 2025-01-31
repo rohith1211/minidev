@@ -324,3 +324,36 @@ sendChatbot.addEventListener("click", function(event) {
   event.stopPropagation(); // Ensure click event does not affect other JS
   sendMessage(); // Trigger message send on button click
 });
+
+// Function to initialize and update the scroll progress bar
+function initializeScrollProgressBar() {
+  // Select the progress bar element
+  const progressBar = document.querySelector('.progress-bar');
+  
+  // Ensure that the progress bar exists in the DOM
+  if (!progressBar) {
+    console.error('Progress bar element not found!');
+    return;
+  }
+
+  // Add scroll event listener
+  window.addEventListener('scroll', function() {
+    // Get the total scrollable height of the document
+    let scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+    
+    // Get the current scroll position
+    let scrollPosition = window.scrollY;
+    
+    // Calculate the scroll progress as a percentage
+    let progress = (scrollPosition / scrollHeight) * 100;
+    
+    // Update the height of the progress bar (ensure the height is between 0 and 100%)
+    progress = Math.min(100, Math.max(0, progress));
+    
+    // Update the height of the progress bar
+    progressBar.style.height = progress + '%';
+  });
+}
+
+// Call the function to initialize the scroll progress bar
+initializeScrollProgressBar();
