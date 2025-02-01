@@ -1,19 +1,19 @@
 import datetime
 import requests
 from fastapi import FastAPI, Request
-from fastapi.responses import Response
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import Response, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sentence_transformers import SentenceTransformer
+from user_agents import parse
 import torch
 import chromadb
 import google.generativeai as genai  # Import Google Gemini API
 import uuid  # Import for unique ID generation
 import os
 import uvicorn
-
 import csv
+
 # Initialize FastAPI app
 app = FastAPI()
 
@@ -30,6 +30,23 @@ templates = Jinja2Templates(directory="templates")
 
 # Serve static files (JS, CSS, images, etc.)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Function to get device information from the user-agent string
+def get_device_info(user_agent: str):
+    ua = parse(user_agent)
+    return f"Device: {ua.device.family} | OS: {ua.os.family} | Browser: {ua.browser.family}"
+
+# Function to get city based on the user's IP using ip-api (HTTPS)
+def get_user_city(ip_address: str):
+    url = f'https://ip-api.com/json/{ip_address}'  # Use HTTPS here
+    try:
+        response = requests.get(url)
+        data = response.json()
+        if data['status'] == 'fail':
+            return 'Unknown'
+        return data.get('city', 'Unknown')
+    except:
+        return 'Unknown'
 
 # Helper function to retrieve context
 def get_context(sentence_index, all_sentences, context_range=5):
@@ -86,7 +103,7 @@ def generate_ai_response(query, context, chat_history):
         return "Unable to generate MiniAI Rohith response at this time."
 
 # Function to log prompts and responses to Google Sheets using the Apps Script endpoint
-def log_to_google_sheet(query, response, is_gemini=False):
+def log_to_google_sheet(query, response, device_info, city, is_gemini=False):
     # Google Apps Script URL
     script_url = "https://script.google.com/macros/s/AKfycbyV__xHrDS-7ajfeLF0cOFJyUdKgXW84AUS56IP2seRBFWoFAf9qmsUAfN4EhppYUITvg/exec"
     
@@ -94,7 +111,7 @@ def log_to_google_sheet(query, response, is_gemini=False):
     timestamp = get_ist_timestamp()  # Get the timestamp in IST
     
     # Concatenate the user query with the timestamp
-    concatenated_query = f"Query: {query} | Timestamp: {timestamp}"
+    concatenated_query = f"Query: {query} | Timestamp: {timestamp} | Device: {device_info} | City: {city}"
 
     # Prepare the data to be sent to the Google Apps Script
     data = {
@@ -113,7 +130,6 @@ def log_to_google_sheet(query, response, is_gemini=False):
     except Exception as e:
         print(f"Error sending data to Google Sheets: {e}")
 
-
 # Serve the main HTML page
 @app.get("/", response_class=HTMLResponse)
 async def get_home(request: Request):
@@ -121,9 +137,11 @@ async def get_home(request: Request):
 
 # API endpoint for sending a message
 @app.post("/send_message")
-async def send_message(data: dict):
+async def send_message(data: dict, request: Request):
     user_message = data.get("message")
-
+    user_agent = request.headers.get('user-agent')
+    ip_address = request.client.host
+    
     if user_message:
         # Query the database for matching context
         results = query_database(user_message, top_k=1, context_range=5)
@@ -134,11 +152,12 @@ async def send_message(data: dict):
         else:
             bot_response = "Sorry, I couldn't find an answer in the context."  # Default response if no match found
         
-        # Log data to CSV with Gemini indication
-        prompt = f"Query: {user_message} | Context: {matched_context} | Generate a detailed and coherent response..."
+        # Get device and city info
+        device_info = get_device_info(user_agent)
+        city = get_user_city(ip_address)
 
         # Log data to Google Sheets
-        log_to_google_sheet(user_message, bot_response, is_gemini=True)
+        log_to_google_sheet(user_message, bot_response, device_info, city, is_gemini=True)
 
         return JSONResponse(content={"response": bot_response, "context": matched_context})
     
