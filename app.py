@@ -36,17 +36,27 @@ def get_device_info(user_agent: str):
     ua = parse(user_agent)
     return f"Device: {ua.device.family} | OS: {ua.os.family} | Browser: {ua.browser.family}"
 
-# Function to get city based on the user's IP using ip-api (HTTPS)
-def get_user_city(ip_address: str):
-    url = f'https://ip-api.com/json/{ip_address}'  # Use HTTPS here
+# Function to get all the details based on the user's IP using ipinfo.io (with token)
+def get_user_details(ip_address: str):
+    url = f'https://ipinfo.io/{ip_address}?token=5ba236dae40c83'  # Replace with your token
     try:
         response = requests.get(url)
         data = response.json()
-        if data['status'] == 'fail':
-            return 'Unknown'
-        return data.get('city', 'Unknown')
-    except:
-        return 'Unknown'
+        if response.status_code != 200:
+            return None  # Returning None in case of failure or invalid status
+        return {
+            'ip': data.get('ip', 'Unknown'),
+            'city': data.get('city', 'Unknown'),
+            'region': data.get('region', 'Unknown'),
+            'country': data.get('country', 'Unknown'),
+            'location': data.get('loc', 'Unknown'),
+            'org': data.get('org', 'Unknown'),
+            'postal': data.get('postal', 'Unknown'),
+            'timezone': data.get('timezone', 'Unknown')
+        }
+    except Exception as e:
+        print(f"Error getting user details: {e}")
+        return None
 
 # Helper function to retrieve context
 def get_context(sentence_index, all_sentences, context_range=5):
@@ -103,21 +113,27 @@ def generate_ai_response(query, context, chat_history):
         return "Unable to generate MiniAI Rohith response at this time."
 
 # Function to log prompts and responses to Google Sheets using the Apps Script endpoint
-def log_to_google_sheet(query, response, device_info, city, is_gemini=False):
+def log_to_google_sheet(query, response, device_info, user_details, is_gemini=False):
     # Google Apps Script URL
     script_url = "https://script.google.com/macros/s/AKfycbyV__xHrDS-7ajfeLF0cOFJyUdKgXW84AUS56IP2seRBFWoFAf9qmsUAfN4EhppYUITvg/exec"
     
     # Get the current timestamp in IST
     timestamp = get_ist_timestamp()  # Get the timestamp in IST
     
-    # Concatenate the user query with the timestamp
-    concatenated_query = f"Query: {query} | Timestamp: {timestamp} | Device: {device_info} | City: {city}"
+    # Concatenate the user query with the timestamp and additional details
+    concatenated_query = (f"Query: {query} | Timestamp: {timestamp}")
+
+    concatenated_info = (f"Device: {device_info} | "
+                      f"IP: {user_details['ip']} | City: {user_details['city']} | Region: {user_details['region']} | "
+                      f"Country: {user_details['country']} | Location: {user_details['location']} | "
+                      f"Org: {user_details['org']} | Postal: {user_details['postal']} | Timezone: {user_details['timezone']}")
+
 
     # Prepare the data to be sent to the Google Apps Script
     data = {
         "entry.1623544729": f"{concatenated_query}",  # Name (you can set this based on your preference)
         "entry.2049655221": f"{response}",  # Email (set this as required)
-        "entry.546089960": "Gemini"  # Concatenated query and response
+        "entry.546089960": f"{concatenated_info}"  # Concatenated query and response
     }
 
     # Send the data to the Google Apps Script endpoint
@@ -152,14 +168,15 @@ async def send_message(data: dict, request: Request):
         else:
             bot_response = "Sorry, I couldn't find an answer in the context."  # Default response if no match found
         
-        # Get device and city info
+        # Get device and user details
         device_info = get_device_info(user_agent)
-        city = get_user_city(ip_address)
+        user_details = get_user_details(ip_address)
 
-        # Log data to Google Sheets
-        log_to_google_sheet(user_message, bot_response, device_info, city, is_gemini=True)
+        if user_details:
+            # Log data to Google Sheets
+            log_to_google_sheet(user_message, bot_response, device_info, user_details, is_gemini=True)
 
-        return JSONResponse(content={"response": bot_response, "context": matched_context})
+        return JSONResponse(content={"response": bot_response, "context": matched_context, "user_details": user_details})
     
     return JSONResponse(content={"response": "No message received!"})
 
