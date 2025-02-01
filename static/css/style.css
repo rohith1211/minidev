@@ -179,7 +179,7 @@
   height: 25px;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
   transition: transform 0.4s ease; /* Increased speed */
 }
