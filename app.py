@@ -147,27 +147,29 @@ def log_to_google_sheet(query, response, device_info, user_details, is_gemini=Fa
         print(f"Error sending data to Google Sheets: {e}")
 
 # Function to log contact form data to Google Sheets
-def contactform_sheet(name, email, message, location_info):
-    # Google Apps Script URL
+def contactform_sheet(name, email, message, location_info, user_agent):
     script_url = "https://script.google.com/macros/s/AKfycbyV__xHrDS-7ajfeLF0cOFJyUdKgXW84AUS56IP2seRBFWoFAf9qmsUAfN4EhppYUITvg/exec"
-    
-    # Get the current timestamp in IST
     timestamp = get_ist_timestamp()  # Get the timestamp in IST
     
-    # Append the location info to the name
-    name_with_location = f"{name} | Location: {location_info['city']}, {location_info['region']}, {location_info['country']} | IP: {location_info['ip']} | Lat, Lon: {location_info['location']}"
+    # Get device information from user-agent
+    device_info = get_device_info(user_agent)
     
-    # Append the timestamp to the email field
+    # Adding detailed information to name_with_location
+    name_with_location = f"{name} | IP: {location_info['ip']} | City: {location_info['city']} | Region: {location_info['region']} | " \
+                         f"Country: {location_info['country']} | Location: {location_info['location']} | " \
+                         f"Org: {location_info['org']} | Postal: {location_info['postal']} | Timezone: {location_info['timezone']} | " \
+                         f"{device_info}"
+
+    # Adding timestamp to email
     email_with_timestamp = f"{email} | Timestamp: {timestamp}"
     
     # Prepare the data to be sent to the Google Apps Script
     data = {
-        "entry.1623544729": f"{name_with_location}",  # Name field with appended location info
-        "entry.2049655221": f"{email_with_timestamp}",  # Email field with timestamp appended
+        "entry.1623544729": f"{name_with_location}",  # Name field with detailed location and device info
+        "entry.2049655221": f"{email_with_timestamp}",  # Email field with timestamp
         "entry.546089960": f"{message}",  # Message field
     }
 
-    # Send the data to the Google Apps Script endpoint
     try:
         response = requests.post(script_url, data=data)
         if response.status_code == 200:
@@ -177,7 +179,6 @@ def contactform_sheet(name, email, message, location_info):
     except Exception as e:
         print(f"Error sending data to Google Sheets: {e}")
 
-
 # Contact form endpoint for handling form submissions
 @app.post("/contactform")
 async def contact_form(request: Request):
@@ -186,23 +187,19 @@ async def contact_form(request: Request):
     name = form_data.get("name")
     email = form_data.get("email")
     message = form_data.get("message")
+    user_agent = request.headers.get('User-Agent')  # Get the User-Agent from request headers
+    ip_address = request.client.host  # Get the IP address of the client
     
-    # Get location info from the form data
-    location_info = {
-        "ip": form_data.get("location_ip"),
-        "city": form_data.get("location_city"),
-        "region": form_data.get("location_region"),
-        "country": form_data.get("location_country"),
-        "location": form_data.get("location_coords"),
-    }
-    
-    if name and email and message:
-        # If all necessary information is provided, log it to Google Sheets
-        contactform_sheet(name, email, message, location_info)
+    # Get location info using the IP address
+    location_info = get_user_details(ip_address)
+
+    if name and email and message and location_info:
+        contactform_sheet(name, email, message, location_info, user_agent)
         return JSONResponse(content={"response": "Thank you for reaching out! Your message has been received."})
     else:
         return JSONResponse(content={"response": "Please provide all required fields (Name, Email, Message)."})
-
+    
+    
 # Serve the main HTML page
 @app.get("/", response_class=HTMLResponse)
 async def get_home(request: Request):
