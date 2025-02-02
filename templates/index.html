@@ -289,14 +289,14 @@
       </p>
     </div>
   
-    <form class="contact-form" method="POST" action="https://script.google.com/macros/s/AKfycbxH3HlSwn_4EhdgFFCgQ86amq1uP4A7z4hcKMWKuxVnzCHTZOWJ7IU6rfnXSxVfGwLzZQ/exec">
+    <form class="contact-form" id="contact-form">
       <fieldset id="contact-form-name">
         <label for="name">Name<span class="red-text">*</span></label>
-        <input type="text" name="entry.1234567890" id="name" placeholder="Your Name" required />
+        <input type="text" name="name" id="name" placeholder="Your Name" required />
       </fieldset>
       <fieldset id="contact-form-email">
         <label for="email">Email<span class="red-text">*</span></label>
-        <input type="email" name="entry.0987654321" id="email" placeholder="Your Email Id" required />
+        <input type="email" name="email" id="email" placeholder="Your Email Id" required />
       </fieldset>
       <fieldset id="contact-form-no-bots">
         <label for="bots">Please leave this field empty</label>
@@ -304,12 +304,11 @@
       </fieldset>
       <fieldset id="contact-form-message">
         <label for="message">Message<span class="red-text">*</span></label>
-        <textarea name="entry.1122334455" id="message" placeholder="Hi, how are you? Reach out to me through this form, let's talk." cols="30" rows="18" required></textarea>
+        <textarea name="message" id="message" placeholder="Hi, how are you? Reach out to me through this form, let's talk." cols="30" rows="18" required></textarea>
       </fieldset>
-      <button id="contact-form-submit" type="submit">
-        Send Message
-      </button>
+      <button id="contact-form-submit" type="submit">Send Message</button>
     </form>
+
   </section>
   <script src="static/js/script.js"></script>
   <!-- Footer -->

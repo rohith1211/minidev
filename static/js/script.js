@@ -142,44 +142,88 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener("DOMContentLoaded", function () {
     const form = document.querySelector(".contact-form");
     const submitButton = document.getElementById("contact-form-submit");
+    
+    // Function to get the device information, OS, location, and timestamp
+    function getDeviceInfo() {
+      return new Promise((resolve, reject) => {
+        const deviceInfo = {
+          timestamp: new Date().toISOString(), // Current timestamp
+          userAgent: navigator.userAgent, // User's device information (browser and OS)
+        };
 
+        // Fetch the user's location based on their IP address using ipinfo.io without API key
+        fetch('https://ipinfo.io/json')  // Public API, no token required
+          .then(response => response.json())
+          .then(data => {
+            deviceInfo.location = {
+              ip: data.ip,
+              city: data.city,
+              region: data.region,
+              country: data.country,
+              loc: data.loc, // latitude and longitude as "lat,lon"
+            };
+            resolve(deviceInfo); // Resolve the promise with device info
+          })
+          .catch(error => {
+            console.error("Error fetching location:", error);
+            deviceInfo.location = { ip: null, city: null, region: null, country: null, loc: null }; // Fallback
+            resolve(deviceInfo); // Resolve even if location fetch fails
+          });
+      });
+    }
+
+    // Function to handle form submission
+    function submitForm(deviceInfo) {
+      const formData = new FormData(form);
+
+      // Append device info as hidden fields to form data
+      formData.append('location_ip', deviceInfo.location.ip);
+      formData.append('location_city', deviceInfo.location.city);
+      formData.append('location_region', deviceInfo.location.region);
+      formData.append('location_country', deviceInfo.location.country);
+      formData.append('location_coords', deviceInfo.location.loc);
+
+      // Send the form data to FastAPI endpoint
+      fetch("/contactform", {
+        method: "POST",
+        body: formData,
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        alert(data.response);  // Show response message from backend
+        if (data.response === "Thank you for reaching out! Your message has been received.") {
+          form.reset();  // Clear the form fields
+        }
+      })
+      .catch((error) => {
+        console.error("Error submitting form:", error);
+        alert("An unexpected error occurred. Please try again.");
+      })
+      .finally(() => {
+        submitButton.textContent = "Send Message"; // Reset button text
+      });
+    }
+
+    // Handle form submission
     if (form && submitButton) {
       form.addEventListener("submit", function (event) {
         event.preventDefault(); // Prevent default form submission behavior
-        submitButton.textContent = "Sending..."; // Update button text to indicate submission
+        submitButton.textContent = "Sending..."; // Update button text
 
-        const formData = new FormData(form);
-        const actionUrl = form.action;
-
-        // Submit the form data using Fetch API
-        fetch(actionUrl, {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => {
-            if (response.ok) {
-              // Clear form fields
-              form.reset();
-              // Display success message
-              alert("Message sent succesfully!");
-            } else {
-              // Display error message
-              alert("Error: Could not send the message. Please try again.");
-            }
+        // Get device information and then submit the form
+        getDeviceInfo()
+          .then(deviceInfo => {
+            submitForm(deviceInfo); // Submit form after appending device info
           })
           .catch((error) => {
-            // Handle fetch errors
-            console.error("Error sending the message:", error);
-            alert("An unexpected error occurred. Please try again.");
-          })
-          .finally(() => {
-            // Reset button text
-            submitButton.textContent = "Send Message";
+            console.error("Error getting device info:", error);
+            submitButton.textContent = "Send Message"; // Reset button text if error occurs
+            alert("There was an issue with retrieving device info.");
           });
       });
     }
   });
-})();
+})(); 
 
 const floatingButton = document.getElementById("floating-button");
 const menuOptions = document.getElementById("menu-options");
