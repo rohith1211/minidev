@@ -241,4 +241,4 @@ async def favicon():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))  # Default to 8000 if no $PORT is set
-    uvicorn.run(app, host="0.0.0.0", port=port)  # Gunicorn will handle this
+    uvicorn.run(app, port=port)  # Gunicorn will handle this
