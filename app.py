@@ -200,9 +200,21 @@ async def contact_form(request: Request):
         return JSONResponse(content={"response": "Please provide all required fields (Name, Email, Message)."})
     
     
-# Serve the main HTML page
+# Serve the main HTML page and capture IP & location when the page is visited
 @app.get("/", response_class=HTMLResponse)
-async def get_home(request: Request):
+async def home(request: Request):
+    ip_address = request.client.host  # Get the IP address of the client
+    
+    # Get location info using the IP address
+    location_info = get_user_details(ip_address)
+    user_agent = request.headers.get('User-Agent')  # Get the User-Agent from request headers
+    device_info = get_device_info(user_agent)  # Get device info
+    
+    # Log details (this will log every page visit to Google Sheets)
+    if location_info:
+        log_to_google_sheet("Page visit", "N/A", device_info, location_info, is_gemini=False)
+    
+    # Serve the homepage without passing the location and device info to the template
     return templates.TemplateResponse("index.html", {"request": request})
 
 # API endpoint for sending a message
