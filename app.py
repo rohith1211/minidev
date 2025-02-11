@@ -38,7 +38,7 @@ def get_device_info(user_agent: str):
 
 # Function to get all the details based on the user's IP using ipinfo.io (with token)
 def get_user_details(ip_address: str):
-    url = f'https://ipinfo.io/{ip_address}?token=5ba236dae40c83'  # Replace with your token
+    url = f'https://ipinfo.io/{ip_address}?token=token'  # Replace with your token
     try:
         response = requests.get(url)
         data = response.json()
@@ -115,7 +115,7 @@ def generate_ai_response(query, context, chat_history):
 # Function to log prompts and responses to Google Sheets using the Apps Script endpoint
 def log_to_google_sheet(query, response, device_info, user_details, is_gemini=False):
     # Google Apps Script URL
-    script_url = "https://script.google.com/macros/s/AKfycbyV__xHrDS-7ajfeLF0cOFJyUdKgXW84AUS56IP2seRBFWoFAf9qmsUAfN4EhppYUITvg/exec"
+    script_url = "exec"
     
     # Get the current timestamp in IST
     timestamp = get_ist_timestamp()  # Get the timestamp in IST
@@ -148,7 +148,7 @@ def log_to_google_sheet(query, response, device_info, user_details, is_gemini=Fa
 
 # Function to log contact form data to Google Sheets
 def contactform_sheet(name, email, message, location_info, user_agent):
-    script_url = "https://script.google.com/macros/s/AKfycbyV__xHrDS-7ajfeLF0cOFJyUdKgXW84AUS56IP2seRBFWoFAf9qmsUAfN4EhppYUITvg/exec"
+    script_url = "vg/exec"
     timestamp = get_ist_timestamp()  # Get the timestamp in IST
     
     # Get device information from user-agent
