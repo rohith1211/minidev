@@ -23,7 +23,7 @@ collection = client.get_collection("sentence_embeddings_collection")
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Set up Gemini API Key
-genai.configure(api_key="AIzaSyBRTJOIZqW5f4Gf0A3Vf_DdSJ1FKn4INAk")
+genai.configure(api_key="apitoken")
 
 # Initialize templates (for rendering HTML)
 templates = Jinja2Templates(directory="templates")
